@@ -9,6 +9,17 @@ on:
       - main
 
 jobs:
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+    outputs:
+      out: ${{ steps.app-token.outputs.token }}
+
   build: 
     runs-on: ubuntu-latest
     steps:
@@ -19,6 +30,7 @@ jobs:
           npm run all
   test:
     runs-on: ubuntu-latest
+    needs: app
     steps:
       - uses: actions/checkout@v3
       - uses: ./
@@ -31,7 +43,7 @@ jobs:
           targetBranch: main
           createPR: 'false'
           message: 'Update Image Version to v1.0.1'
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ needs.app.outputs.token }}
 
   test-no-changes-did-not-fail:
     runs-on: ubuntu-latest
