@@ -1,7 +1,8 @@
 # YAML Update Action
 
-Update values in an existing YAML or JSON File. Push this updated File to an existing branch or create a new branch. Open a PullRequest to a configurable targetBranch. It is also possible to change the file locally without committing the change.
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/macmiranda/yaml-update-action/test.yml)
 
+Update values in an existing YAML or JSON File. Push this updated File to an existing branch or create a new branch. Open a PullRequest to a configurable targetBranch. It is also possible to change the file locally without committing the change.
 
 ## Use Cases
 
