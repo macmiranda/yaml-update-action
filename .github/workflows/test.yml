@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  app:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
@@ -17,23 +17,13 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
-    outputs:
-      out: ${{ steps.app-token.outputs.token }}
-
-  build: 
-    runs-on: ubuntu-latest
-    steps:
       - uses: actions/checkout@v3
       - run: |
           npm install
       - run: |
           npm run all
-  test:
-    runs-on: ubuntu-latest
-    needs: app
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./
+      - name: test
+        uses: ./
         with:
           valueFile: '__tests__/fixtures/values.yaml'
           propertyPath: 'backend.version'
@@ -43,13 +33,9 @@ jobs:
           targetBranch: main
           createPR: 'false'
           message: 'Update Image Version to v1.0.1'
-          token: ${{ needs.app.outputs.token }}
-
-  test-no-changes-did-not-fail:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./
+          token: ${{ steps.app-token.outputs.token }}
+      - name: test-no-changes-did-not-fail
+        uses: ./
         with:
           valueFile: '__tests__/fixtures/values.yaml'
           propertyPath: 'backend.version'
@@ -59,16 +45,8 @@ jobs:
           targetBranch: main
           createPR: 'false'
           message: 'Update Image Version to v1.2.0'
-          token: ${{ secrets.GH_TOKEN }}
-
-
-  test-target-repository:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          path: infrastructure
-      - name: Update values.yaml
+          token: ${{ steps.app-token.outputs.token }}
+      - name: test-target-repository
         uses: ./infrastructure
         with:
           valueFile: '__tests__/fixtures/values.yaml'
@@ -80,15 +58,8 @@ jobs:
           createPR: 'false'
           message: 'Update Image Version to v1.2.1' 
           workDir: infrastructure
-          token: ${{ secrets.GH_TOKEN }}
-
-  test-update-file:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Cat Original values.yaml
-        run: cat __tests__/fixtures/values.yaml
-      - name: Update values.yaml
+          token: ${{ steps.app-token.outputs.token }}
+      - name: test-update-file
         uses: ./
         with:
           valueFile: '__tests__/fixtures/values.yaml'
@@ -97,14 +68,8 @@ jobs:
           masterBranchName: main
           commitChange: 'false'
           updateFile: 'true'
-      - name: Cat Updated values.yaml
-        run: cat __tests__/fixtures/values.yaml
-  
-  test-multiple-file-changes:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./
+      - name:  test-multiple-file-changes
+        uses: ./
         with:
           branch: deployment/test-multi-file-update
           masterBranchName: main
@@ -132,11 +97,8 @@ jobs:
                 "frontend": true
               }
             }
-  test-value-types:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./
+      - name: test-value-types
+        uses: ./
         with:
           valueFile: '__tests__/fixtures/values.yaml'
           propertyPath: 'config.prod'
@@ -147,8 +109,9 @@ jobs:
           description: Test GitHub Action
           message: 'Update Config' 
           title: 'Bool Update on all Environments'
-          token: ${{ secrets.GH_TOKEN }}
-      - uses: ./
+          token: ${{ steps.app-token.outputs.token }}
+      - name: test-value-types-2
+        uses: ./
         with:
           valueFile: '__tests__/fixtures/values.yaml'
           propertyPath: 'config.version'
@@ -159,19 +122,16 @@ jobs:
           description: Test GitHub Action
           message: 'Update Config' 
           title: 'Int Update on all Environments'
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
   cleanup:
     runs-on: ubuntu-latest
     needs:
-      - test-target-repository
-      - test-update-file
-      - test-multiple-file-changes
-      - test-value-types
+      - tests
     steps:
       - uses: actions/checkout@v3
       - name: Delete test branches
         uses: dawidd6/action-delete-branch@v3
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           branches: deployment/v1.2.1,deployment/v1.0.1,deployment/test-bool-value,deployment/test-int-value,deployment/test-multi-file-update
